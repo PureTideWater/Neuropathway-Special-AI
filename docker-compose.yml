@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -85,30 +83,30 @@ services:
       - pathwise-network
     restart: unless-stopped
 
-  # API Gateway
-  api-gateway:
-    build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
-    container_name: pathwise-api-gateway
-    environment:
-      NODE_ENV: development
-      API_GATEWAY_PORT: 4000
-      AUTH_SERVICE_URL: http://auth-service:4001
-      IEP_SERVICE_URL: http://iep-service:4002
-      ADAPTIVE_SERVICE_URL: http://adaptive-learning-service:4003
-      AI_ENGINE_URL: http://ai-engine:4004
-      CORS_ORIGIN: http://localhost:3000
-    ports:
-      - "4000:4000"
-    depends_on:
-      - auth-service
-    volumes:
-      - ./services/api-gateway:/app
-      - /app/node_modules
-    networks:
-      - pathwise-network
-    restart: unless-stopped
+  # API Gateway (TODO: Build this service)
+  # api-gateway:
+  #   build:
+  #     context: ./services/api-gateway
+  #     dockerfile: Dockerfile
+  #   container_name: pathwise-api-gateway
+  #   environment:
+  #     NODE_ENV: development
+  #     API_GATEWAY_PORT: 4000
+  #     AUTH_SERVICE_URL: http://auth-service:4001
+  #     IEP_SERVICE_URL: http://iep-service:4002
+  #     ADAPTIVE_SERVICE_URL: http://adaptive-learning-service:4003
+  #     AI_ENGINE_URL: http://ai-engine:4004
+  #     CORS_ORIGIN: http://localhost:3000
+  #   ports:
+  #     - "4000:4000"
+  #   depends_on:
+  #     - auth-service
+  #   volumes:
+  #     - ./services/api-gateway:/app
+  #     - /app/node_modules
+  #   networks:
+  #     - pathwise-network
+  #   restart: unless-stopped
 
   # IEP Service
   iep-service:
@@ -163,29 +161,29 @@ services:
       - pathwise-network
     restart: unless-stopped
 
-  # Adaptive Learning Service
-  adaptive-learning-service:
-    build:
-      context: ./services/adaptive-learning-service
-      dockerfile: Dockerfile
-    container_name: pathwise-adaptive-learning-service
-    environment:
-      NODE_ENV: development
-      ADAPTIVE_SERVICE_PORT: 4003
-      DATABASE_URL: postgresql://pathwise_user:pathwise_secure_password@postgres:5432/pathwise
-      REDIS_URL: redis://redis:6379
-      AI_ENGINE_URL: http://ai-engine:4004
-    ports:
-      - "4003:4003"
-    depends_on:
-      - postgres
-      - ai-engine
-    volumes:
-      - ./services/adaptive-learning-service:/app
-      - /app/node_modules
-    networks:
-      - pathwise-network
-    restart: unless-stopped
+  # Adaptive Learning Service (TODO: Build this service)
+  # adaptive-learning-service:
+  #   build:
+  #     context: ./services/adaptive-learning-service
+  #     dockerfile: Dockerfile
+  #   container_name: pathwise-adaptive-learning-service
+  #   environment:
+  #     NODE_ENV: development
+  #     ADAPTIVE_SERVICE_PORT: 4003
+  #     DATABASE_URL: postgresql://pathwise_user:pathwise_secure_password@postgres:5432/pathwise
+  #     REDIS_URL: redis://redis:6379
+  #     AI_ENGINE_URL: http://ai-engine:4004
+  #   ports:
+  #     - "4003:4003"
+  #   depends_on:
+  #     - postgres
+  #     - ai-engine
+  #   volumes:
+  #     - ./services/adaptive-learning-service:/app
+  #     - /app/node_modules
+  #   networks:
+  #     - pathwise-network
+  #   restart: unless-stopped
 
   # Frontend (Next.js)
   frontend:
@@ -195,12 +193,14 @@ services:
     container_name: pathwise-frontend
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4002
       PORT: 3000
     ports:
       - "3000:3000"
     depends_on:
-      - api-gateway
+      - auth-service
+      - ai-engine
+      - iep-service
     volumes:
       - ./frontend:/app
       - /app/node_modules
