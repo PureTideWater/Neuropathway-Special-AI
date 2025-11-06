@@ -7,6 +7,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { body, param } from 'express-validator';
 import { logger } from '../utils/logger';
+import { getStateRegulations, getSupportedStates } from '../services/state-regulations.service';
 
 export const complianceRouter = Router();
 
@@ -172,6 +173,7 @@ complianceRouter.post(
  * GET /api/compliance/regulations/:state
  * Get compliance checklist for a specific state
  * Helps teachers know what's required
+ * NOW SUPPORTS 10 STATES!
  */
 complianceRouter.get(
   '/regulations/:state',
@@ -182,92 +184,28 @@ complianceRouter.get(
 
       logger.info('Fetching state regulations', { state });
 
-      // Mock California regulations
-      const regulations = {
-        state,
-        stateName: 'California',
-        lastUpdated: '2024-01-15',
+      // Get regulations from service
+      const regulations = getStateRegulations(state.toUpperCase());
 
-        categories: [
-          {
-            category: 'IEP Development',
-            requirements: [
-              {
-                code: 'CA Ed Code 56341',
-                title: 'IEP Team Composition',
-                description: 'Required team members must include parent, regular ed teacher, special ed teacher, LEA rep, assessment professional',
-                mandatory: true,
-              },
-              {
-                code: 'CA Ed Code 56345',
-                title: 'IEP Content',
-                description: 'IEP must include present levels, goals, services, placement, and transition (age 16+)',
-                mandatory: true,
-              },
-            ],
+      if (!regulations) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'STATE_NOT_SUPPORTED',
+            message: `Regulations for state ${state} are not yet available`,
+            supportedStates: getSupportedStates(),
           },
-          {
-            category: 'Transition Services',
-            requirements: [
-              {
-                code: 'CA Ed Code 56345.1',
-                title: 'Transition Planning (Age 16+)',
-                description: 'Must include post-secondary goals and transition services',
-                mandatory: true,
-                applicableAge: '16+',
-              },
-            ],
-          },
-          {
-            category: 'Extended School Year',
-            requirements: [
-              {
-                code: 'CA Ed Code 56345',
-                title: 'ESY Consideration',
-                description: 'Team must consider ESY annually',
-                mandatory: true,
-              },
-            ],
-          },
-        ],
-
-        forms: [
-          {
-            name: 'IEP Meeting Notice',
-            required: true,
-            timing: '10 days before meeting (or as agreed)',
-          },
-          {
-            name: 'Prior Written Notice (PWN)',
-            required: true,
-            timing: 'For any proposed/refused changes',
-          },
-          {
-            name: 'Assessment Plan',
-            required: true,
-            timing: '15 days for parent consent',
-          },
-        ],
-
-        timelines: [
-          {
-            event: 'Initial IEP',
-            timeline: 'Within 60 days of parental consent for assessment',
-          },
-          {
-            event: 'Annual Review',
-            timeline: 'At least once per year',
-          },
-          {
-            event: 'Triennial Evaluation',
-            timeline: 'Every 3 years (or sooner if requested)',
-          },
-        ],
-      };
+        });
+        return;
+      }
 
       res.json({
         success: true,
         data: regulations,
+        meta: {
+          totalSupportedStates: getSupportedStates().length,
+          supportedStates: getSupportedStates(),
+        },
       });
     } catch (error) {
       next(error);
@@ -310,6 +248,34 @@ complianceRouter.post(
         data: {
           fixes,
           message: `${fixes.length} fixes suggested - review and apply`,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/compliance/supported-states
+ * Get list of all supported states
+ * COMPETITIVE ADVANTAGE: We support 10 states and growing!
+ */
+complianceRouter.get(
+  '/supported-states',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      logger.info('Fetching supported states');
+
+      const states = getSupportedStates();
+
+      res.json({
+        success: true,
+        data: {
+          states,
+          total: states.length,
+          message: `PathWise supports compliance checking in ${states.length} states`,
+          roadmap: 'Expanding to all 50 states by Q2 2025',
         },
       });
     } catch (error) {

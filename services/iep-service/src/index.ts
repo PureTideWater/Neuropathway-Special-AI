@@ -13,6 +13,7 @@ import { iepRouter } from './routes/iep.routes';
 import { goalRouter } from './routes/goal.routes';
 import { progressRouter } from './routes/progress.routes';
 import { complianceRouter } from './routes/compliance.routes';
+import { templateRouter } from './routes/template.routes';
 import { errorHandler } from './middleware/error-handler';
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.use('/api/ieps', iepRouter);              // Complete IEP management
 app.use('/api/goals', goalRouter);             // Goal tracking & AI suggestions
 app.use('/api/progress', progressRouter);      // Progress monitoring (killer feature)
 app.use('/api/compliance', complianceRouter);  // State compliance checking (unique to us)
+app.use('/api/templates', templateRouter);     // Smart templates that learn (AI-powered)
 
 // 404 handler
 app.use((req: Request, res: Response) => {

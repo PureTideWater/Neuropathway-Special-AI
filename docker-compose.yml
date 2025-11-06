@@ -161,6 +161,28 @@ services:
       - pathwise-network
     restart: unless-stopped
 
+  # PDF Service (NEW - Competitive Feature)
+  pdf-service:
+    build:
+      context: ./services/pdf-service
+      dockerfile: Dockerfile
+    container_name: pathwise-pdf-service
+    environment:
+      NODE_ENV: development
+      PDF_SERVICE_PORT: 4005
+      IEP_SERVICE_URL: http://iep-service:4002
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "4005:4005"
+    depends_on:
+      - iep-service
+    volumes:
+      - ./services/pdf-service:/app
+      - /app/node_modules
+    networks:
+      - pathwise-network
+    restart: unless-stopped
+
   # Adaptive Learning Service (TODO: Build this service)
   # adaptive-learning-service:
   #   build:
