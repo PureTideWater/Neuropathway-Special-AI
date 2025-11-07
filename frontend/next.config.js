@@ -3,12 +3,6 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
 
-  // PWA configuration for offline support
-  experimental: {
-    // Enable server actions for better performance
-    serverActions: true,
-  },
-
   // Environment variables
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
