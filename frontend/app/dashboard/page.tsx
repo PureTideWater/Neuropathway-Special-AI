@@ -194,6 +194,19 @@ export default function DashboardPage() {
                   </div>
                 </Link>
 
+                <Link
+                  href="/integrations/google-classroom"
+                  className="flex items-center p-4 border-2 border-green-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-all group"
+                >
+                  <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                    <AcademicCapIcon className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">Google Classroom</p>
+                    <p className="text-sm text-gray-500">🔗 Auto-sync grades</p>
+                  </div>
+                </Link>
+
                 {userRole === 'admin' && (
                   <Link
                     href="/admin/compliance"
