@@ -13,6 +13,7 @@ import { adaptiveLearningRouter } from './routes/adaptive-learning.routes';
 import { predictionRouter } from './routes/prediction.routes';
 import { transcriptionRouter } from './routes/transcription.routes';
 import { accommodationRouter } from './routes/accommodation.routes';
+import { translationRouter } from './routes/translation.routes';
 import { errorHandler } from './middleware/error-handler';
 
 dotenv.config();
@@ -44,6 +45,7 @@ app.use('/api/adaptive-learning', adaptiveLearningRouter);
 app.use('/api/predictions', predictionRouter); // COMPETITIVE MOAT: Goal progress prediction ML
 app.use('/api/transcription', transcriptionRouter); // PATENT OPPORTUNITY: Meeting minutes with AI
 app.use('/api/accommodations', accommodationRouter); // DATA MOAT: Collaborative filtering recommendations
+app.use('/api/translation', translationRouter); // MARKET EXPANSION: 10 languages for parent communication
 
 // 404 handler
 app.use((req: Request, res: Response) => {
