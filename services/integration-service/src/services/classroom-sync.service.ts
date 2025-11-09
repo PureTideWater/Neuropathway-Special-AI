@@ -81,9 +81,9 @@ export async function fetchCourses(accessToken: string): Promise<Course[]> {
     return courses.map((course) => ({
       id: course.id!,
       name: course.name!,
-      section: course.section,
-      descriptionHeading: course.descriptionHeading,
-      room: course.room,
+      section: course.section ?? undefined,
+      descriptionHeading: course.descriptionHeading ?? undefined,
+      room: course.room ?? undefined,
       ownerId: course.ownerId!,
       courseState: course.courseState!,
     }));
@@ -165,11 +165,13 @@ export async function fetchCourseWork(
       id: work.id!,
       courseId,
       title: work.title!,
-      description: work.description,
+      description: work.description ?? undefined,
       state: work.state!,
       maxPoints: work.maxPoints || 100,
       workType: work.workType!,
-      dueDate: work.dueDate,
+      dueDate: work.dueDate && work.dueDate.year && work.dueDate.month && work.dueDate.day
+        ? { year: work.dueDate.year, month: work.dueDate.month, day: work.dueDate.day }
+        : undefined,
       creationTime: work.creationTime!,
     }));
   } catch (error) {
@@ -211,9 +213,9 @@ export async function fetchSubmissions(
       courseWorkId,
       userId: submission.userId!,
       state: submission.state!,
-      assignedGrade: submission.assignedGrade,
-      draftGrade: submission.draftGrade,
-      submissionHistory: submission.submissionHistory,
+      assignedGrade: submission.assignedGrade ?? undefined,
+      draftGrade: submission.draftGrade ?? undefined,
+      submissionHistory: submission.submissionHistory ?? undefined,
     }));
   } catch (error) {
     logger.error('Failed to fetch submissions', error as Error, {

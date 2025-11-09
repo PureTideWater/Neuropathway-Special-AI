@@ -188,7 +188,7 @@ async function generateWithOpenAI(prompt: string): Promise<IEPGenerationResponse
  * Generate using Anthropic Claude
  */
 async function generateWithAnthropic(prompt: string): Promise<IEPGenerationResponse> {
-  const message = await anthropic.messages.create({
+  const message = await (anthropic as any).messages.create({
     model: 'claude-3-5-sonnet-20241022',
     max_tokens: 2000,
     messages: [

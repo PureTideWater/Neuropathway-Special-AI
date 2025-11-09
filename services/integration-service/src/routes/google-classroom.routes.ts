@@ -5,7 +5,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import { generateAuthUrl, getTokensFromCode, refreshAccessToken } from '../utils/oauth-helper';
+import { generateAuthUrl, getTokensFromCode } from '../utils/oauth-helper';
 import {
   fetchCourses,
   fetchStudents,
@@ -48,7 +48,7 @@ googleClassroomRouter.get(
 
       logger.info('Generated Google Classroom auth URL', { userId });
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           authUrl,
@@ -56,7 +56,7 @@ googleClassroomRouter.get(
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
@@ -100,7 +100,7 @@ googleClassroomRouter.post(
         hasRefreshToken: !!tokens.refresh_token,
       });
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           message: 'Google Classroom connected successfully',
@@ -108,7 +108,7 @@ googleClassroomRouter.post(
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
@@ -122,6 +122,18 @@ googleClassroomRouter.get(
   [query('userId').isUUID().withMessage('Valid user ID required')],
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Validation failed',
+            details: errors.array(),
+          },
+        });
+      }
+
       const { userId } = req.query;
 
       logger.info('Fetching Google Classroom courses', { userId });
@@ -141,7 +153,7 @@ googleClassroomRouter.get(
 
       const courses = await fetchCourses(accessToken);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           courses,
@@ -149,7 +161,7 @@ googleClassroomRouter.get(
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
@@ -166,6 +178,18 @@ googleClassroomRouter.get(
   ],
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Validation failed',
+            details: errors.array(),
+          },
+        });
+      }
+
       const { courseId } = req.params;
       const { userId } = req.query;
 
@@ -176,7 +200,7 @@ googleClassroomRouter.get(
 
       const students = await fetchStudents(accessToken, courseId);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           students,
@@ -184,7 +208,7 @@ googleClassroomRouter.get(
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
@@ -211,7 +235,7 @@ googleClassroomRouter.get(
 
       const courseWork = await fetchCourseWork(accessToken, courseId);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           coursework: courseWork,
@@ -219,7 +243,7 @@ googleClassroomRouter.get(
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
@@ -237,6 +261,18 @@ googleClassroomRouter.get(
   ],
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Validation failed',
+            details: errors.array(),
+          },
+        });
+      }
+
       const { courseId, courseWorkId } = req.params;
       const { userId } = req.query;
 
@@ -247,7 +283,7 @@ googleClassroomRouter.get(
 
       const submissions = await fetchSubmissions(accessToken, courseId, courseWorkId);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           submissions,
@@ -255,7 +291,7 @@ googleClassroomRouter.get(
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
@@ -288,7 +324,7 @@ googleClassroomRouter.post(
 
       const syncResults = await syncAllCourses(accessToken, userId as string);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           message: 'Sync completed successfully',
@@ -296,7 +332,7 @@ googleClassroomRouter.post(
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
@@ -325,7 +361,7 @@ googleClassroomRouter.post(
 
       await mapAssignmentToGoal(courseId, courseWorkId, iepGoalId);
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           message: 'Assignment mapped to IEP goal successfully',
@@ -337,7 +373,7 @@ googleClassroomRouter.post(
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
@@ -358,14 +394,14 @@ googleClassroomRouter.delete(
       // In production: Delete from integrations table
       // DELETE FROM integrations WHERE user_id = userId AND provider = 'google_classroom'
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           message: 'Google Classroom disconnected successfully',
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 );
