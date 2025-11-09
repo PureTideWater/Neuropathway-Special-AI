@@ -14,6 +14,10 @@ import { goalRouter } from './routes/goal.routes';
 import { progressRouter } from './routes/progress.routes';
 import { complianceRouter } from './routes/compliance.routes';
 import { templateRouter } from './routes/template.routes';
+import { collaborationRouter } from './routes/collaboration.routes';
+import { mobileApiRouter } from './routes/mobile-api.routes';
+import { marketplaceRouter } from './routes/marketplace.routes';
+import { roiDashboardRouter } from './routes/roi-dashboard.routes';
 import { errorHandler } from './middleware/error-handler';
 
 dotenv.config();
@@ -53,6 +57,10 @@ app.use('/api/goals', goalRouter);             // Goal tracking & AI suggestions
 app.use('/api/progress', progressRouter);      // Progress monitoring (killer feature)
 app.use('/api/compliance', complianceRouter);  // State compliance checking (unique to us)
 app.use('/api/templates', templateRouter);     // Smart templates that learn (AI-powered)
+app.use('/api/collaboration', collaborationRouter); // FEATURE #11: Google Docs-style collaboration
+app.use('/api/mobile', mobileApiRouter);       // FEATURE #12: Mobile data collection (offline-first)
+app.use('/api/marketplace', marketplaceRouter); // FEATURE #13: Template marketplace with revenue share
+app.use('/api/roi', roiDashboardRouter);       // FEATURE #14: ROI dashboard for renewals
 
 // 404 handler
 app.use((req: Request, res: Response) => {

@@ -221,20 +221,18 @@ export default function DashboardPage() {
                   </div>
                 </Link>
 
-                {userRole === 'admin' && (
-                  <Link
-                    href="/admin/compliance"
-                    className="flex items-center p-4 border-2 border-red-200 rounded-lg hover:border-red-400 hover:bg-red-50 transition-all group"
-                  >
-                    <div className="p-2 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors">
-                      <ShieldCheckIcon className="h-6 w-6 text-red-600" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-medium text-gray-900">Compliance</p>
-                      <p className="text-sm text-gray-500">⚠️ District dashboard</p>
-                    </div>
-                  </Link>
-                )}
+                <Link
+                  href="/compliance/reports"
+                  className="flex items-center p-4 border-2 border-red-200 rounded-lg hover:border-red-400 hover:bg-red-50 transition-all group"
+                >
+                  <div className="p-2 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors">
+                    <ShieldCheckIcon className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">Compliance Reports</p>
+                    <p className="text-sm text-gray-500">✅ 50-state checker</p>
+                  </div>
+                </Link>
               </div>
             </div>
 
