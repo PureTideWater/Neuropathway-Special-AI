@@ -181,6 +181,19 @@ export default function DashboardPage() {
                   </div>
                 </Link>
 
+                <Link
+                  href="/goals/predictions"
+                  className="flex items-center p-4 border-2 border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all group"
+                >
+                  <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                    <SparklesIcon className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">Goal Predictions</p>
+                    <p className="text-sm text-gray-500">🤖 AI early warning</p>
+                  </div>
+                </Link>
+
                 {userRole === 'admin' && (
                   <Link
                     href="/admin/compliance"
