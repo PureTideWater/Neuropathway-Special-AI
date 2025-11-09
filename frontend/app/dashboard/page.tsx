@@ -14,6 +14,7 @@ import {
   UserGroupIcon,
   CalendarIcon,
   ShieldCheckIcon,
+  LightBulbIcon,
 } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
@@ -204,6 +205,19 @@ export default function DashboardPage() {
                   <div className="ml-3">
                     <p className="font-medium text-gray-900">Google Classroom</p>
                     <p className="text-sm text-gray-500">🔗 Auto-sync grades</p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/accommodations/recommend/student-123"
+                  className="flex items-center p-4 border-2 border-pink-200 rounded-lg hover:border-pink-400 hover:bg-pink-50 transition-all group"
+                >
+                  <div className="p-2 bg-pink-100 rounded-lg group-hover:bg-pink-200 transition-colors">
+                    <LightBulbIcon className="h-6 w-6 text-pink-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">Accommodations</p>
+                    <p className="text-sm text-gray-500">📊 AI recommendations</p>
                   </div>
                 </Link>
 
