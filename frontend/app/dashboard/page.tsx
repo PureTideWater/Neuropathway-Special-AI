@@ -10,6 +10,10 @@ import {
   ClockIcon,
   BellIcon,
   SparklesIcon,
+  MicrophoneIcon,
+  UserGroupIcon,
+  CalendarIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
@@ -126,28 +130,41 @@ export default function DashboardPage() {
                 </Link>
 
                 <Link
-                  href="/adaptive-learning"
-                  className="flex items-center p-4 border-2 border-secondary-200 rounded-lg hover:border-secondary-400 hover:bg-secondary-50 transition-all group"
+                  href="/observations"
+                  className="flex items-center p-4 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all group"
                 >
-                  <div className="p-2 bg-secondary-100 rounded-lg group-hover:bg-secondary-200 transition-colors">
-                    <AcademicCapIcon className="h-6 w-6 text-secondary-600" />
+                  <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                    <MicrophoneIcon className="h-6 w-6 text-purple-600" />
                   </div>
                   <div className="ml-3">
-                    <p className="font-medium text-gray-900">Adaptive Learning</p>
-                    <p className="text-sm text-gray-500">Launch learning session</p>
+                    <p className="font-medium text-gray-900">Quick Observations</p>
+                    <p className="text-sm text-gray-500">🎤 Voice-to-text notes</p>
                   </div>
                 </Link>
 
                 <Link
-                  href="/students"
-                  className="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all group"
+                  href="/meetings/prep/iep-123"
+                  className="flex items-center p-4 border-2 border-indigo-200 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition-all group"
                 >
-                  <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
-                    <UsersIcon className="h-6 w-6 text-gray-600" />
+                  <div className="p-2 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors">
+                    <CalendarIcon className="h-6 w-6 text-indigo-600" />
                   </div>
                   <div className="ml-3">
-                    <p className="font-medium text-gray-900">View Students</p>
-                    <p className="text-sm text-gray-500">Manage student roster</p>
+                    <p className="font-medium text-gray-900">Meeting Prep</p>
+                    <p className="text-sm text-gray-500">⚡ Ready in 30 seconds</p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/parents/student-123"
+                  className="flex items-center p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all group"
+                >
+                  <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                    <UserGroupIcon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">Parent Portal</p>
+                    <p className="text-sm text-gray-500">🛡️ Legal protection</p>
                   </div>
                 </Link>
 
@@ -163,6 +180,21 @@ export default function DashboardPage() {
                     <p className="text-sm text-gray-500">View progress data</p>
                   </div>
                 </Link>
+
+                {userRole === 'admin' && (
+                  <Link
+                    href="/admin/compliance"
+                    className="flex items-center p-4 border-2 border-red-200 rounded-lg hover:border-red-400 hover:bg-red-50 transition-all group"
+                  >
+                    <div className="p-2 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors">
+                      <ShieldCheckIcon className="h-6 w-6 text-red-600" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="font-medium text-gray-900">Compliance</p>
+                      <p className="text-sm text-gray-500">⚠️ District dashboard</p>
+                    </div>
+                  </Link>
+                )}
               </div>
             </div>
 
