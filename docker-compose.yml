@@ -183,6 +183,35 @@ services:
       - pathwise-network
     restart: unless-stopped
 
+  # Integration Service (NEW - Google Classroom, Canvas, Schoology)
+  integration-service:
+    build:
+      context: ./services/integration-service
+      dockerfile: Dockerfile
+    container_name: pathwise-integration-service
+    environment:
+      NODE_ENV: development
+      INTEGRATION_SERVICE_PORT: 4006
+      DATABASE_URL: postgresql://pathwise_user:pathwise_secure_password@postgres:5432/pathwise
+      REDIS_URL: redis://redis:6379
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: http://localhost:3000/integrations/google-classroom/callback
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "4006:4006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/integration-service:/app
+      - /app/node_modules
+    networks:
+      - pathwise-network
+    restart: unless-stopped
+
   # Adaptive Learning Service (TODO: Build this service)
   # adaptive-learning-service:
   #   build:
