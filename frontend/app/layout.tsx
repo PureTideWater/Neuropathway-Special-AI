@@ -4,6 +4,8 @@ import '@/styles/globals.css';
 import { Providers } from './providers';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Navigation } from './components/Navigation';
+import { Breadcrumbs } from './components/Breadcrumbs';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -46,12 +48,27 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
-      <body className="antialiased">
+      <body className="antialiased bg-gray-50">
         <a href="#main-content" className="skip-to-main">
           Skip to main content
         </a>
         <Providers>
-          {children}
+          <div className="flex h-screen overflow-hidden">
+            {/* Navigation Sidebar */}
+            <Navigation />
+
+            {/* Main Content Area */}
+            <main
+              id="main-content"
+              className="flex-1 overflow-y-auto lg:ml-64"
+            >
+              <div className="p-4 lg:p-8">
+                <Breadcrumbs />
+                {children}
+              </div>
+            </main>
+          </div>
+
           <ToastContainer
             position="top-right"
             autoClose={5000}

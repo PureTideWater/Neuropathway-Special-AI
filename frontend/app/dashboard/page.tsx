@@ -21,37 +21,7 @@ export default function DashboardPage() {
   const [userRole] = useState<'teacher' | 'admin' | 'parent' | 'student'>('teacher');
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <SparklesIcon className="h-8 w-8 text-primary-600" />
-                <h1 className="text-2xl font-bold text-gray-900 font-display">PathWise</h1>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="p-2 rounded-lg hover:bg-gray-100 relative">
-                <BellIcon className="h-6 w-6 text-gray-600" />
-                <span className="absolute top-1 right-1 h-2 w-2 bg-danger-500 rounded-full"></span>
-              </button>
-              <div className="flex items-center space-x-2">
-                <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold">
-                  SJ
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Sarah Johnson</p>
-                  <p className="text-xs text-gray-500 capitalize">{userRole}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl">
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, Sarah!</h2>
@@ -321,7 +291,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </main>
     </div>
   );
 }
