@@ -16,6 +16,18 @@
 
 import OpenAI from 'openai';
 import { logger } from '../utils/logger';
+import {
+  validateComplianceCheckInput,
+  validateIEPStructure,
+  validatePLOP,
+  validateMeasurableGoals,
+  validateProgressMeasurement,
+  validateTransitionServices,
+  calculateComplianceScore,
+  determineComplianceStatus,
+  validateComplianceResult,
+  logComplianceCheck,
+} from '../utils/compliance-validation';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -154,72 +166,120 @@ export interface ComplianceResult {
 
 /**
  * Check IEP compliance against state and federal requirements
+ * BULLETPROOF: Full validation, error handling, audit logging
  */
 export async function checkIEPCompliance(
   iepId: string,
   state: string,
   generatePDF: boolean = false
 ): Promise<ComplianceResult> {
-  logger.info('Checking IEP compliance', { iepId, state });
+  // STEP 1: Validate input parameters
+  const inputValidation = validateComplianceCheckInput({ iepId, state, generatePDF });
+  if (!inputValidation.valid) {
+    const errorMessage = `Invalid input: ${inputValidation.errors.join(', ')}`;
+    logger.error('Compliance check failed: invalid input', { iepId, state, errors: inputValidation.errors });
+    throw new Error(errorMessage);
+  }
 
-  // In production: Fetch IEP from database
-  const iep = await fetchIEPData(iepId);
+  logger.info('Starting compliance check', { iepId, state, generatePDF });
 
-  // Check federal requirements
-  const federalIssues = await checkFederalCompliance(iep);
+  try {
+    // STEP 2: Fetch IEP from database with error handling
+    const iep = await fetchIEPData(iepId);
 
-  // Check state-specific requirements
-  const stateIssues = await checkStateCompliance(iep, state);
+    if (!iep) {
+      throw new Error(`IEP not found: ${iepId}`);
+    }
 
-  // Combine issues
-  const allIssues = [...federalIssues, ...stateIssues];
+    // STEP 3: Validate IEP structure
+    const structureIssues = validateIEPStructure(iep);
+    if (structureIssues.length > 0) {
+      logger.warn('IEP structure validation issues', { iepId, missingSections: structureIssues });
+    }
 
-  // Calculate compliance score
-  const criticalIssueCount = allIssues.filter((i) => i.severity === 'critical').length;
-  const warningCount = allIssues.filter((i) => i.severity === 'warning').length;
+    // STEP 4: Check federal requirements with detailed validation
+    const federalIssues = await checkFederalCompliance(iep);
 
-  const complianceScore = Math.max(
-    0,
-    100 - criticalIssueCount * 15 - warningCount * 5
-  );
+    // STEP 5: Check state-specific requirements
+    const stateIssues = await checkStateCompliance(iep, state);
 
-  const overallStatus: 'compliant' | 'non-compliant' | 'needs-review' =
-    criticalIssueCount === 0
-      ? warningCount === 0
-        ? 'compliant'
-        : 'needs-review'
-      : 'non-compliant';
+    // STEP 6: Combine all issues
+    const allIssues = [...federalIssues, ...stateIssues];
 
-  const result: ComplianceResult = {
-    iepId,
-    state,
-    checkedAt: new Date(),
-    overallStatus,
-    complianceScore,
-    issues: allIssues,
+    // STEP 7: Calculate compliance metrics using validated formula
+    const criticalIssueCount = allIssues.filter((i) => i.severity === 'critical').length;
+    const warningCount = allIssues.filter((i) => i.severity === 'warning').length;
+
+    const scoreCalculation = calculateComplianceScore(criticalIssueCount, warningCount);
+    const complianceScore = scoreCalculation.score;
+    const overallStatus = determineComplianceStatus(criticalIssueCount, warningCount);
+
+    // STEP 8: Build result object
+    const result: ComplianceResult = {
+      iepId,
+      state,
+      checkedAt: new Date(),
+      overallStatus,
+      complianceScore,
+      issues: allIssues,
     criticalIssueCount,
     warningCount,
     federalCompliance: federalIssues.filter((i) => i.severity === 'critical').length === 0,
     stateCompliance: stateIssues.filter((i) => i.severity === 'critical').length === 0,
   };
 
-  // Store result in database
-  await storeComplianceResult(result);
+    // STEP 9: Validate result before storing
+    const resultValidation = validateComplianceResult(result);
+    if (!resultValidation.valid) {
+      logger.error('Compliance result validation failed', {
+        iepId,
+        errors: resultValidation.errors
+      });
+      throw new Error(`Result validation failed: ${resultValidation.errors.join(', ')}`);
+    }
 
-  // Generate PDF if requested
-  if (generatePDF) {
-    const pdfUrl = await generatePDFReport(result);
-    result.pdfUrl = pdfUrl;
+    // STEP 10: Store result in database with error handling
+    try {
+      await storeComplianceResult(result);
+    } catch (error) {
+      logger.error('Failed to store compliance result', { iepId, error });
+      // Continue even if storage fails - we still have the result
+    }
+
+    // STEP 11: Generate PDF if requested
+    if (generatePDF) {
+      try {
+        const pdfUrl = await generatePDFReport(result);
+        result.pdfUrl = pdfUrl;
+      } catch (error) {
+        logger.error('Failed to generate PDF report', { iepId, error });
+        // Don't fail the whole check if PDF generation fails
+      }
+    }
+
+    // STEP 12: Audit log for compliance
+    logComplianceCheck(iepId, state, result);
+
+    logger.info('Compliance check completed successfully', {
+      iepId,
+      state,
+      overallStatus,
+      complianceScore,
+      criticalIssues: criticalIssueCount,
+      warnings: warningCount,
+      scoreBreakdown: scoreCalculation.breakdown,
+    });
+
+    return result;
+  } catch (error) {
+    logger.error('Compliance check failed', {
+      iepId,
+      state,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    throw error;
   }
-
-  logger.info('Compliance check complete', {
-    iepId,
-    overallStatus,
-    complianceScore,
-    criticalIssues: criticalIssueCount,
-  });
-
-  return result;
 }
 
 /**
@@ -379,71 +439,253 @@ async function fetchIEPData(iepId: string): Promise<any> {
   };
 }
 
+/**
+ * Check federal IDEA compliance with detailed validation
+ * Uses bulletproof validation logic from compliance-validation.ts
+ */
 async function checkFederalCompliance(iep: any): Promise<ComplianceIssue[]> {
   const issues: ComplianceIssue[] = [];
 
-  // Check PLOP
-  if (!iep.hasPLOP) {
+  // 1. Validate PLOP (34 CFR §300.320(a)(1))
+  const plopValidation = validatePLOP(iep);
+  if (!plopValidation.isValid) {
     issues.push({
       ruleId: 'PLOP',
       ruleName: 'Present Levels of Performance',
       severity: 'critical',
       description: 'IEP must include present levels of academic achievement and functional performance',
       citation: '34 CFR §300.320(a)(1)',
-      finding: 'No PLOP section found in IEP',
-      remediation: 'Add detailed PLOP section describing current academic and functional performance',
+      finding: plopValidation.issues.join('; '),
+      remediation:
+        'Add comprehensive PLOP section including: (1) current academic performance with data, (2) functional performance, (3) how disability affects involvement in general education',
     });
   }
 
-  // Check measurable goals
-  if (!iep.hasMeasurableGoals) {
+  // 2. Validate Measurable Goals (34 CFR §300.320(a)(2))
+  const goalsValidation = validateMeasurableGoals(iep);
+  if (!goalsValidation.isValid) {
     issues.push({
       ruleId: 'MEASURABLE_GOALS',
       ruleName: 'Measurable Annual Goals',
       severity: 'critical',
       description: 'Goals must be measurable and include academic and functional goals',
       citation: '34 CFR §300.320(a)(2)',
-      finding: 'Goals are not measurable or missing',
-      remediation: 'Rewrite goals to include specific, measurable criteria (e.g., "80% accuracy on 4 out of 5 trials")',
+      finding: goalsValidation.issues.join('; '),
+      remediation:
+        'Rewrite goals to include: (1) observable behavior, (2) measurable criteria (e.g., "80% accuracy"), (3) conditions/context (e.g., "in 4 out of 5 trials")',
     });
   }
 
-  // Check progress measurement
-  if (!iep.hasProgressMeasurement) {
+  // 3. Validate Progress Measurement (34 CFR §300.320(a)(3))
+  const progressValidation = validateProgressMeasurement(iep);
+  if (!progressValidation.isValid) {
     issues.push({
       ruleId: 'PROGRESS_MEASUREMENT',
       ruleName: 'Progress Measurement',
       severity: 'critical',
       description: 'Description of how progress will be measured and when reports will be provided',
       citation: '34 CFR §300.320(a)(3)',
-      finding: 'No progress measurement methodology specified',
+      finding: progressValidation.issues.join('; '),
       remediation: 'Add section specifying how progress will be measured (e.g., weekly assessments) and reporting schedule (e.g., quarterly)',
     });
   }
 
-  // Check transition services for students 16+
-  if (iep.studentAge >= 16 && !iep.hasTransitionPlan) {
+  // 4. Validate Special Education Services (34 CFR §300.320(a)(4))
+  if (!iep.services || !Array.isArray(iep.services) || iep.services.length === 0) {
+    issues.push({
+      ruleId: 'SPECIAL_ED_SERVICES',
+      ruleName: 'Special Education Services',
+      severity: 'critical',
+      description: 'Statement of special education and related services to be provided',
+      citation: '34 CFR §300.320(a)(4)',
+      finding: 'No special education services specified',
+      remediation: 'Add detailed services section including: (1) type of service, (2) frequency, (3) duration, (4) location, (5) start date',
+    });
+  } else {
+    // Validate each service has required details
+    const incompleteServices = iep.services.filter((service: any) =>
+      !service.type || !service.frequency || !service.duration
+    );
+    if (incompleteServices.length > 0) {
+      issues.push({
+        ruleId: 'SPECIAL_ED_SERVICES',
+        ruleName: 'Special Education Services',
+        severity: 'warning',
+        description: 'Services must include type, frequency, and duration',
+        citation: '34 CFR §300.320(a)(4)',
+        finding: `${incompleteServices.length} service(s) missing required details`,
+        remediation: 'Each service must specify: type (e.g., "Speech Therapy"), frequency (e.g., "2x weekly"), duration (e.g., "30 minutes")',
+      });
+    }
+  }
+
+  // 5. Validate LRE Explanation (34 CFR §300.320(a)(5))
+  if (!iep.lreJustification || typeof iep.lreJustification !== 'string') {
+    issues.push({
+      ruleId: 'LRE_EXPLANATION',
+      ruleName: 'LRE Explanation',
+      severity: 'warning',
+      description: 'Explanation of extent student will not participate with nondisabled children',
+      citation: '34 CFR §300.320(a)(5)',
+      finding: 'LRE justification is missing',
+      remediation: 'Add LRE explanation describing: (1) extent of participation in general education, (2) justification for any removal from general education, (3) consideration of supplementary aids and services',
+    });
+  } else if (iep.lreJustification.trim().length < 30) {
+    issues.push({
+      ruleId: 'LRE_EXPLANATION',
+      ruleName: 'LRE Explanation',
+      severity: 'warning',
+      description: 'LRE justification is too brief',
+      citation: '34 CFR §300.320(a)(5)',
+      finding: 'LRE justification lacks substantive explanation',
+      remediation: 'Expand LRE justification to include substantive explanation of placement decision',
+    });
+  }
+
+  // 6. Validate Accommodations (34 CFR §300.320(a)(6))
+  if (!iep.accommodations || !Array.isArray(iep.accommodations) || iep.accommodations.length === 0) {
+    issues.push({
+      ruleId: 'ACCOMMODATIONS',
+      ruleName: 'Accommodations',
+      severity: 'warning',
+      description: 'Individual accommodations necessary to measure academic achievement',
+      citation: '34 CFR §300.320(a)(6)',
+      finding: 'No accommodations specified',
+      remediation: 'Add accommodations for: (1) classroom instruction, (2) assessments, (3) state/district testing. Examples: extended time, breaks, small group setting',
+    });
+  }
+
+  // 7. Validate Transition Services (34 CFR §300.320(b)) - Age 16+
+  const transitionValidation = validateTransitionServices(iep);
+  if (!transitionValidation.isValid) {
     issues.push({
       ruleId: 'TRANSITION_SERVICES',
       ruleName: 'Transition Services (Age 16+)',
       severity: 'critical',
       description: 'Transition services and postsecondary goals required for students 16 and older',
       citation: '34 CFR §300.320(b)',
-      finding: 'Student is 16+ but no transition plan found',
-      remediation: 'Add transition plan with postsecondary goals, transition services, and agency linkages',
+      finding: transitionValidation.issues.join('; '),
+      remediation: 'Add transition plan including: (1) measurable postsecondary goals (education, employment, independent living), (2) transition services to help achieve goals, (3) agency linkages',
     });
   }
 
   return issues;
 }
 
+/**
+ * Check state-specific compliance requirements
+ * Validates against state regulations in addition to federal IDEA
+ */
 async function checkStateCompliance(iep: any, state: string): Promise<ComplianceIssue[]> {
   const issues: ComplianceIssue[] = [];
 
+  // Get state requirements (returns empty array if state not in our database yet)
   const stateReqs = STATE_REQUIREMENTS[state] || [];
 
-  // State-specific checks would go here
-  // For demo, return empty array
+  if (stateReqs.length === 0) {
+    logger.warn('No state-specific requirements configured', { state });
+    // This is OK - just means we only check federal compliance for this state
+    return issues;
+  }
+
+  // California-specific checks
+  if (state === 'CA') {
+    // CA triennial assessment requirement
+    if (iep.lastAssessmentDate) {
+      const daysSinceAssessment = Math.floor(
+        (Date.now() - new Date(iep.lastAssessmentDate).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSinceAssessment > 1095) { // 3 years = 1095 days
+        issues.push({
+          ruleId: 'CA_TRIENNIAL',
+          ruleName: 'Triennial Assessment',
+          severity: 'critical',
+          description: 'California requires reassessment at least once every 3 years',
+          citation: 'Cal. Ed. Code §56381',
+          finding: `Last assessment was ${Math.floor(daysSinceAssessment / 365)} years ago`,
+          remediation: 'Schedule triennial reassessment immediately',
+        });
+      }
+    }
+
+    // CA disability category requirement
+    if (!iep.disabilityCategory) {
+      issues.push({
+        ruleId: 'CA_DIS_CATEGORY',
+        ruleName: 'Disability Category',
+        severity: 'warning',
+        description: 'Must specify primary disability category from California list',
+        citation: 'Cal. Ed. Code §56026',
+        finding: 'Disability category not specified',
+        remediation: 'Specify primary disability category',
+      });
+    }
+  }
+
+  // Texas-specific checks
+  if (state === 'TX') {
+    // TX ARD committee requirement
+    if (!iep.ardCommitteeMembers || iep.ardCommitteeMembers.length < 5) {
+      issues.push({
+        ruleId: 'TX_ARD_COMMITTEE',
+        ruleName: 'ARD Committee',
+        severity: 'critical',
+        description: 'Texas ARD committee must include all required members',
+        citation: '19 TAC §89.1050',
+        finding: 'ARD committee composition incomplete',
+        remediation: 'Ensure ARD includes: parent, LEA rep, general ed teacher, special ed teacher, evaluation interpreter, student (if appropriate)',
+      });
+    }
+
+    // TX behavior plan if behavior impedes learning
+    if (iep.behaviorImpedesLearning && !iep.hasBehaviorPlan) {
+      issues.push({
+        ruleId: 'TX_BEHAVIOR_PLAN',
+        ruleName: 'Behavior Intervention Plan',
+        severity: 'warning',
+        description: 'Required if behavior impedes learning',
+        citation: '19 TAC §89.1053',
+        finding: 'Behavior impedes learning but no BIP present',
+        remediation: 'Develop Behavior Intervention Plan (BIP)',
+      });
+    }
+  }
+
+  // New York-specific checks
+  if (state === 'NY') {
+    // NY annual review requirement
+    if (iep.lastReviewDate) {
+      const daysSinceReview = Math.floor(
+        (Date.now() - new Date(iep.lastReviewDate).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSinceReview > 365) {
+        issues.push({
+          ruleId: 'NY_ANNUAL_REVIEW',
+          ruleName: 'Annual Review',
+          severity: 'critical',
+          description: 'New York requires annual review and parent notification',
+          citation: '8 NYCRR §200.4(b)',
+          finding: `IEP has not been reviewed in ${Math.floor(daysSinceReview / 365)} year(s)`,
+          remediation: 'Schedule annual IEP review meeting immediately',
+        });
+      }
+    }
+
+    // NY 12-month services consideration
+    if (!iep.consideredExtendedYear) {
+      issues.push({
+        ruleId: 'NY_12_MONTH',
+        ruleName: '12-Month Services',
+        severity: 'warning',
+        description: 'Must consider need for 12-month school year services',
+        citation: '8 NYCRR §200.6(k)',
+        finding: 'No documentation of extended year consideration',
+        remediation: 'Document team consideration of need for 12-month services',
+      });
+    }
+  }
+
+  logger.info('State compliance check completed', { state, issueCount: issues.length });
   return issues;
 }
 
