@@ -56,6 +56,8 @@ const navigation: NavItem[] = [
     badge: 'AI',
     children: [
       { name: 'Goal Predictions', href: '/goals/predictions', icon: SparklesIcon },
+      { name: 'Goal Generator', href: '/goals/generate', icon: DocumentTextIcon, badge: 'NEW' },
+      { name: 'Similar Students', href: '/students/student-123/similar-insights', icon: UsersIcon, badge: 'PREMIUM' },
       { name: 'Meeting Prep', href: '/meetings/prep/iep-123', icon: CalendarIcon },
       { name: 'Accommodations', href: '/accommodations/recommend/student-123', icon: LightBulbIcon },
     ],
@@ -102,6 +104,7 @@ const navigation: NavItem[] = [
     icon: ChartBarIcon,
     children: [
       { name: 'Progress Analytics', href: '/analytics', icon: ChartBarIcon },
+      { name: 'District Dashboard', href: '/admin/district-dashboard', icon: UsersIcon, badge: 'Enterprise' },
       { name: 'ROI Dashboard', href: '/roi/district-123', icon: CurrencyDollarIcon },
     ],
   },

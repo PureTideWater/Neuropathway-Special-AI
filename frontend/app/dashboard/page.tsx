@@ -203,6 +203,38 @@ export default function DashboardPage() {
                     <p className="text-sm text-gray-500">✅ 50-state checker</p>
                   </div>
                 </Link>
+
+                <Link
+                  href="/goals/generate"
+                  className="flex items-center p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all group relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-bl-lg">
+                    🏆 PATENT
+                  </div>
+                  <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                    <DocumentTextIcon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">Goal Generator</p>
+                    <p className="text-sm text-gray-500">⚡ 80% time savings</p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/students/student-123/similar-insights"
+                  className="flex items-center p-4 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all group relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-bl-lg">
+                    💎 PREMIUM
+                  </div>
+                  <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                    <UsersIcon className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">Similar Students</p>
+                    <p className="text-sm text-gray-500">🔗 Network insights</p>
+                  </div>
+                </Link>
               </div>
             </div>
 
