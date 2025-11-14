@@ -14,6 +14,7 @@ import {
   MicrophoneIcon,
   CalendarIcon,
   UserGroupIcon,
+  UsersIcon,
   ChartBarIcon,
   SparklesIcon,
   AcademicCapIcon,
