@@ -1,0 +1,270 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: pathwise-postgres
+    environment:
+      POSTGRES_DB: pathwise
+      POSTGRES_USER: pathwise_user
+      POSTGRES_PASSWORD: pathwise_secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schemas:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pathwise_user -d pathwise"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pathwise-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: pathwise-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pathwise-network
+
+  # ElasticSearch (for full-text search)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: pathwise-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - pathwise-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: pathwise-auth-service
+    environment:
+      NODE_ENV: development
+      AUTH_SERVICE_PORT: 4001
+      DATABASE_URL: postgresql://pathwise_user:pathwise_secure_password@postgres:5432/pathwise
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_minimum_32_characters}
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "4001:4001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+    networks:
+      - pathwise-network
+    restart: unless-stopped
+
+  # API Gateway (TODO: Build this service)
+  # api-gateway:
+  #   build:
+  #     context: ./services/api-gateway
+  #     dockerfile: Dockerfile
+  #   container_name: pathwise-api-gateway
+  #   environment:
+  #     NODE_ENV: development
+  #     API_GATEWAY_PORT: 4000
+  #     AUTH_SERVICE_URL: http://auth-service:4001
+  #     IEP_SERVICE_URL: http://iep-service:4002
+  #     ADAPTIVE_SERVICE_URL: http://adaptive-learning-service:4003
+  #     AI_ENGINE_URL: http://ai-engine:4004
+  #     CORS_ORIGIN: http://localhost:3000
+  #   ports:
+  #     - "4000:4000"
+  #   depends_on:
+  #     - auth-service
+  #   volumes:
+  #     - ./services/api-gateway:/app
+  #     - /app/node_modules
+  #   networks:
+  #     - pathwise-network
+  #   restart: unless-stopped
+
+  # IEP Service
+  iep-service:
+    build:
+      context: ./services/iep-service
+      dockerfile: Dockerfile
+    container_name: pathwise-iep-service
+    environment:
+      NODE_ENV: development
+      IEP_SERVICE_PORT: 4002
+      DATABASE_URL: postgresql://pathwise_user:pathwise_secure_password@postgres:5432/pathwise
+      REDIS_URL: redis://redis:6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    ports:
+      - "4002:4002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./services/iep-service:/app
+      - /app/node_modules
+    networks:
+      - pathwise-network
+    restart: unless-stopped
+
+  # AI Engine
+  ai-engine:
+    build:
+      context: ./services/ai-engine
+      dockerfile: Dockerfile
+    container_name: pathwise-ai-engine
+    environment:
+      NODE_ENV: development
+      AI_ENGINE_PORT: 4004
+      DATABASE_URL: postgresql://pathwise_user:pathwise_secure_password@postgres:5432/pathwise
+      REDIS_URL: redis://redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      AI_MODEL_PRIMARY: gpt-4o
+      AI_MODEL_FALLBACK: claude-3-5-sonnet
+    ports:
+      - "4004:4004"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/ai-engine:/app
+      - /app/node_modules
+    networks:
+      - pathwise-network
+    restart: unless-stopped
+
+  # PDF Service (NEW - Competitive Feature)
+  pdf-service:
+    build:
+      context: ./services/pdf-service
+      dockerfile: Dockerfile
+    container_name: pathwise-pdf-service
+    environment:
+      NODE_ENV: development
+      PDF_SERVICE_PORT: 4005
+      IEP_SERVICE_URL: http://iep-service:4002
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "4005:4005"
+    depends_on:
+      - iep-service
+    volumes:
+      - ./services/pdf-service:/app
+      - /app/node_modules
+    networks:
+      - pathwise-network
+    restart: unless-stopped
+
+  # Integration Service (NEW - Google Classroom, Canvas, Schoology)
+  integration-service:
+    build:
+      context: ./services/integration-service
+      dockerfile: Dockerfile
+    container_name: pathwise-integration-service
+    environment:
+      NODE_ENV: development
+      INTEGRATION_SERVICE_PORT: 4006
+      DATABASE_URL: postgresql://pathwise_user:pathwise_secure_password@postgres:5432/pathwise
+      REDIS_URL: redis://redis:6379
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: http://localhost:3000/integrations/google-classroom/callback
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "4006:4006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/integration-service:/app
+      - /app/node_modules
+    networks:
+      - pathwise-network
+    restart: unless-stopped
+
+  # Adaptive Learning Service (TODO: Build this service)
+  # adaptive-learning-service:
+  #   build:
+  #     context: ./services/adaptive-learning-service
+  #     dockerfile: Dockerfile
+  #   container_name: pathwise-adaptive-learning-service
+  #   environment:
+  #     NODE_ENV: development
+  #     ADAPTIVE_SERVICE_PORT: 4003
+  #     DATABASE_URL: postgresql://pathwise_user:pathwise_secure_password@postgres:5432/pathwise
+  #     REDIS_URL: redis://redis:6379
+  #     AI_ENGINE_URL: http://ai-engine:4004
+  #   ports:
+  #     - "4003:4003"
+  #   depends_on:
+  #     - postgres
+  #     - ai-engine
+  #   volumes:
+  #     - ./services/adaptive-learning-service:/app
+  #     - /app/node_modules
+  #   networks:
+  #     - pathwise-network
+  #   restart: unless-stopped
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pathwise-frontend
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:4002
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - ai-engine
+      - iep-service
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - pathwise-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:
+
+networks:
+  pathwise-network:
+    driver: bridge

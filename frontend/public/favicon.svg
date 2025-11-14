@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#0ea5e9"/>
+  
+  <!-- Stylized "P" for PathWise -->
+  <path d="M20 16 L20 48 M20 16 L32 16 C38 16 42 20 42 26 C42 32 38 36 32 36 L20 36" 
+        stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Dot representing a student/goal -->
+  <circle cx="38" cy="42" r="3" fill="white"/>
+</svg>
